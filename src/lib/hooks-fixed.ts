@@ -1,1 +1,0 @@
-REPLACE YOUR ENTIRE src/lib/hooks.ts FILE WITH THE CODE PROVIDED IN THE CHAT RESPONSE. This placeholder file confirms generation.
