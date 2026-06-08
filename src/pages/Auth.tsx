@@ -29,11 +29,7 @@ export default function AuthPage({ onAuth, signUp, signIn }: AuthPageProps) {
       }
       onAuth();
     } catch (err: any) {
-      setError(
-        err.message?.includes('Invalid login') ? 'Invalid email or password'
-          : err.message?.includes('already registered') ? 'Email already registered'
-          : err.message || 'Something went wrong'
-      );
+      setError(err.message?.includes('Invalid login') ? 'Invalid email or password' : err.message?.includes('already registered') ? 'Email already registered' : err.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -42,17 +38,14 @@ export default function AuthPage({ onAuth, signUp, signIn }: AuthPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* ── Branding ── */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-600/30">
             <TrendingUp className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">FK CashFlow AI</h1>
-          <p className="text-slate-400 mt-1 text-sm">Powered by FK</p>
-          <p className="text-slate-500 mt-1 text-xs">Speak. Record. Track.</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">ExpenseFlow AI</h1>
+          <p className="text-slate-400 mt-2 text-sm">Speak. Record. Track.</p>
         </div>
 
-        {/* ── Auth Card ── PRESERVED STRUCTURE ── */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-up">
           <div className="flex mb-6 bg-white/5 rounded-xl p-1">
             <button
