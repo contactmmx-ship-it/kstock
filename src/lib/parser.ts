@@ -147,54 +147,92 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
 };
 
 // ─── Income/Expense detection ───────────────────────
-// Using weighted scoring with positional bias for better accuracy
-const INCOME_KEYWORDS_WEIGHTED: [string, number][] = [
-  // Strong income signals
-  ['received', 3], ['mila', 3], ['mile', 3], ['liya', 3], ['liye', 3],
-  ['aaya', 3], ['aaye', 3], ['prapt', 3], ['jama', 3], ['jamá', 3],
-  ['income', 3], ['aay', 3], ['vitt aay', 3],
-  // Medium income signals
-  ['got', 2], ['earned', 2], ['kamaya', 2], ['salary', 2], ['vetan', 2],
-  ['profit', 2], ['munafa', 2], ['faayda', 2], ['fayda', 2],
-  ['credit', 2], ['crediterd', 2], ['refund', 2], ['returned', 2],
-  ['came', 2], ['collected', 2], ['recovered', 2], ['bikri', 2], ['vikray', 2],
-  ['deposited', 2], ['bhugtan mila', 2],
-  // Weak income signals
-  ['gave me', 1], ['paid to me', 1], ['sent me', 1], ['ne diya', 1],
+// Phase 1: Check compound phrases first (longer = more specific)
+// Phase 2: Then check single-word signals
+// When a compound phrase matches, its sub-parts are NOT counted again.
+
+const INCOME_PHRASES: [string, number][] = [
+  // Compound phrases must be checked before single words
+  ['paid to me', 10], ['gave me', 10], ['sent me', 10],
+  ['ne diya', 10], ['se liya', 10], ['se mila', 10], ['se mile', 10],
+  ['ne bheja', 10], ['se prapt', 10], ['bhugtan mila', 10],
+  ['payment received', 10], ['cash received', 10], ['money received', 10],
+  ['received from', 8], ['got from', 8], ['collected from', 8],
 ];
 
-const EXPENSE_KEYWORDS_WEIGHTED: [string, number][] = [
-  // Strong expense signals
-  ['paid', 3], ['diya', 3], ['diye', 3], ['dene', 3], ['bhugtan', 3],
-  ['spent', 3], ['kharch', 3], ['kharcha', 3], ['vyay', 3],
-  ['given', 3], ['gaye', 3], ['gayi', 3],
-  // Medium expense signals
-  ['bought', 2], ['kharid', 2], ['khareed', 2],
-  ['purchase', 2], ['cost', 2], ['gave', 2], ['sent', 2], ['bheja', 2],
-  ['expense', 2], ['bill', 2], ['fee', 2], ['charge', 2],
-  ['nikaal', 2], ['nikla', 2], ['kaaata', 2], ['kat gaya', 2],
-  ['ghata', 2], ['nuksan', 2], ['udhaar', 2],
-  // Weak expense signals
-  ['ordered', 1], ['ordering', 1], ['transfer', 1],
+const EXPENSE_PHRASES: [string, number][] = [
+  ['paid to', 10], ['given to', 10], ['sent to', 10], ['gave to', 10],
+  ['ko diya', 10], ['ko diye', 10], ['ke liye diya', 10],
+  ['maine diya', 10], ['maine diye', 10], ['maine bheja', 10],
+  ['kat gaya', 10], ['cut gaya', 10],
+];
+
+const INCOME_WORDS: [string, number][] = [
+  ['received', 5], ['mila', 5], ['mile', 5], ['liya', 5], ['liye', 5],
+  ['aaya', 5], ['aaye', 5], ['aayi', 5], ['prapt', 5], ['jama', 5],
+  ['income', 5], ['kamaya', 5], ['salary', 4], ['vetan', 4],
+  ['profit', 4], ['munafa', 4], ['faayda', 4], ['fayda', 4],
+  ['got', 3], ['earned', 3], ['credit', 3], ['refund', 3],
+  ['returned', 3], ['came', 3], ['collected', 3], ['bikri', 3],
+  ['deposited', 3], ['recovered', 3],
+];
+
+const EXPENSE_WORDS: [string, number][] = [
+  ['paid', 5], ['spent', 5], ['kharch', 5], ['kharcha', 5], ['vyay', 5],
+  ['given', 5], ['bought', 4], ['kharid', 4], ['khareed', 4],
+  ['purchase', 4], ['cost', 4], ['gave', 4], ['sent', 4], ['bheja', 4],
+  ['expense', 4], ['bill', 3], ['fee', 3], ['charge', 3],
+  ['ghata', 3], ['nuksan', 3], ['udhaar', 3],
+  ['diya', 3], ['diye', 3], ['dene', 3],
+  ['gaye', 3], ['gayi', 3],
+  ['ordered', 2], ['nikaal', 2], ['nikla', 2],
 ];
 
 function resolveType(input: string): 'income' | 'expense' {
   const lower = input.toLowerCase();
-
   let incomeScore = 0;
   let expenseScore = 0;
 
-  for (const [keyword, weight] of INCOME_KEYWORDS_WEIGHTED) {
-    if (lower.includes(keyword)) incomeScore += weight;
+  // Phase 1: Check compound phrases (most specific, highest weight)
+  let matchedIncomePhrase = '';
+  let matchedExpensePhrase = '';
+
+  for (const [phrase, weight] of INCOME_PHRASES) {
+    if (lower.includes(phrase)) {
+      incomeScore += weight;
+      matchedIncomePhrase = phrase;
+      break; // First phrase match wins
+    }
   }
 
-  for (const [keyword, weight] of EXPENSE_KEYWORDS_WEIGHTED) {
-    if (lower.includes(keyword)) expenseScore += weight;
+  for (const [phrase, weight] of EXPENSE_PHRASES) {
+    if (lower.includes(phrase)) {
+      expenseScore += weight;
+      matchedExpensePhrase = phrase;
+      break; // First phrase match wins
+    }
+  }
+
+  // Phase 2: Check single words, but skip words that are part of a matched phrase
+  for (const [word, weight] of INCOME_WORDS) {
+    if (lower.includes(word)) {
+      // Skip if this word is part of a matched expense phrase
+      if (matchedExpensePhrase && matchedExpensePhrase.includes(word)) continue;
+      incomeScore += weight;
+    }
+  }
+
+  for (const [word, weight] of EXPENSE_WORDS) {
+    if (lower.includes(word)) {
+      // Skip if this word is part of a matched income phrase
+      if (matchedIncomePhrase && matchedIncomePhrase.includes(word)) continue;
+      expenseScore += weight;
+    }
   }
 
   if (incomeScore > expenseScore) return 'income';
   if (expenseScore > incomeScore) return 'expense';
-  return 'expense'; // Default to expense when ambiguous
+  return 'expense';
 }
 
 // ─── Payment modes ──────────────────────────────────
