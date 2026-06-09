@@ -20,18 +20,41 @@ const ASK_MODE_RESPONSE = "Was this by cash or online? Cash ya online?";
 const CONFIRM_PREFIX = "Got it! Recording ";
 const NON_EXPENSE_RESPONSE = "This doesn't seem like an expense or income. I only handle payment and receival records. Yeh kharcha ya aay nahi lag raha, main sirf payment aur receival record karta hoon.";
 
+function getBestVoice(): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  return voices.find(v => v.lang === 'en-IN') || voices.find(v => v.lang.startsWith('en')) || null;
+}
+
 function speak(text: string): Promise<void> {
   return new Promise((resolve) => {
     if (!('speechSynthesis' in window)) { resolve(); return; }
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'hi-IN';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
-    window.speechSynthesis.speak(utterance);
-    setTimeout(resolve, 6000);
+
+    const trySpeak = () => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-IN';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      const voice = getBestVoice();
+      if (voice) utterance.voice = voice;
+      utterance.onend = () => resolve();
+      utterance.onerror = () => resolve();
+      window.speechSynthesis.speak(utterance);
+      setTimeout(resolve, 8000);
+    };
+
+    // Voices may load async in Chrome - wait for them if needed
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      trySpeak();
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        trySpeak();
+        window.speechSynthesis.onvoiceschanged = null;
+      };
+      // Fallback if voices never load
+      setTimeout(trySpeak, 1000);
+    }
   });
 }
 
@@ -126,7 +149,8 @@ export default function VoiceAssistant({ onSubmit, disabled }: VoiceAssistantPro
     }
 
     const recognition = new SR();
-    recognition.lang = 'hi-IN';
+    // en-IN works on most systems and understands Hinglish well
+    recognition.lang = 'en-IN';
     recognition.interimResults = false;
     recognition.maxAlternatives = 3;
     recognitionRef.current = recognition;
@@ -140,7 +164,21 @@ export default function VoiceAssistant({ onSubmit, disabled }: VoiceAssistantPro
       processTranscript(transcript);
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (e: any) => {
+      console.warn('Speech recognition error:', e.error);
+      recognitionRef.current = null;
+      // Show error in chat if it's a real failure
+      if (e.error === 'not-allowed') {
+        addMessage('ai', 'Microphone permission denied. Please allow mic access in your browser settings and try again.');
+      } else if (e.error === 'no-speech') {
+        addMessage('ai', 'Could not hear anything. Please try again, speak louder or move closer to the mic.');
+      } else if (e.error === 'audio-capture') {
+        addMessage('ai', 'No microphone found. Please connect a microphone and try again.');
+      }
+      setState('idle');
+    };
+
+    recognition.onnomatch = () => {
       recognitionRef.current = null;
       setState('idle');
     };

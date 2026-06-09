@@ -146,18 +146,18 @@ export function useVoiceInput() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     const recognition = new SR();
-    recognition.lang = 'hi-IN';
+    recognition.lang = 'en-IN';
     recognition.interimResults = false;
+    recognition.continuous = false;
     recognition.maxAlternatives = 3;
     recognition.onresult = (e: any) => {
-      // Use best result (first alternative)
       const t = e.results[0][0].transcript;
       setTranscript(t);
       setIsListening(false);
     };
     recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
-    recognition.start();
+    try { recognition.start(); } catch { setIsListening(false); }
     setIsListening(true);
   }, []);
 
