@@ -15,24 +15,23 @@ interface VoiceAssistantProps {
   disabled?: boolean;
 }
 
-const REJECTION_RESPONSE = "I am an AI expense updation assistant. I can only help with recording payments and receivals. Please tell me about an expense or income entry.";
-const ASK_MODE_RESPONSE = "Was this by cash or online?";
-const CONFIRM_PREFIX = "Got it. Recording ";
-const NON_EXPENSE_RESPONSE = "That doesn't seem like an expense or income entry. I only handle payment and receival records. Please tell me about a transaction.";
+const REJECTION_RESPONSE = "I am an AI expense assistant. I only record payments and receivals. Please tell me about an expense or income. Main ek AI kharcha assistant hoon, sirf payment aur receival record karta hoon.";
+const ASK_MODE_RESPONSE = "Was this by cash or online? Cash ya online?";
+const CONFIRM_PREFIX = "Got it! Recording ";
+const NON_EXPENSE_RESPONSE = "This doesn't seem like an expense or income. I only handle payment and receival records. Yeh kharcha ya aay nahi lag raha, main sirf payment aur receival record karta hoon.";
 
 function speak(text: string): Promise<void> {
   return new Promise((resolve) => {
     if (!('speechSynthesis' in window)) { resolve(); return; }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-IN';
-    utterance.rate = 1.0;
+    utterance.lang = 'hi-IN';
+    utterance.rate = 0.95;
     utterance.pitch = 1.0;
     utterance.onend = () => resolve();
     utterance.onerror = () => resolve();
     window.speechSynthesis.speak(utterance);
-    // Fallback resolve in case onend doesn't fire
-    setTimeout(resolve, 5000);
+    setTimeout(resolve, 6000);
   });
 }
 
@@ -127,9 +126,9 @@ export default function VoiceAssistant({ onSubmit, disabled }: VoiceAssistantPro
     }
 
     const recognition = new SR();
-    recognition.lang = 'en-IN';
+    recognition.lang = 'hi-IN';
     recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 3;
     recognitionRef.current = recognition;
 
     setState('listening');

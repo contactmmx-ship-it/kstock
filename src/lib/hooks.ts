@@ -64,8 +64,11 @@ export function useProfile(userId: string | null) {
         setLoading(false);
         if (data) {
           const start = new Date(data.trial_start_date);
+          start.setHours(0, 0, 0, 0);
           const now = new Date();
+          now.setHours(0, 0, 0, 0);
           const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+          // Signup day is Day 1, so 7 days means 7 - diff days remaining (including today)
           const left = Math.max(0, 7 - diff);
           setTrialDaysLeft(left);
           setIsTrialExpired(left <= 0 && !data.is_subscribed);
@@ -143,10 +146,11 @@ export function useVoiceInput() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     const recognition = new SR();
-    recognition.lang = 'en-IN';
+    recognition.lang = 'hi-IN';
     recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 3;
     recognition.onresult = (e: any) => {
+      // Use best result (first alternative)
       const t = e.results[0][0].transcript;
       setTranscript(t);
       setIsListening(false);
