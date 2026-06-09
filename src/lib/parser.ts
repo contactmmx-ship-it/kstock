@@ -1,5 +1,30 @@
 import { ParsedEntry } from './types';
 
+const EXPENSE_RELATED = [
+  'paid', 'spent', 'gave', 'received', 'got', 'bought', 'salary', 'rent', 'food',
+  'transport', 'shopping', 'medical', 'education', 'bill', 'fee', 'charge', 'cost',
+  'income', 'expense', 'earned', 'profit', 'credit', 'debit', 'refund', 'emi',
+  'insurance', 'premium', 'loan', 'interest', 'purchase', 'ordered', 'ordering',
+  'cash', 'online', 'upi', 'gpay', 'phonepe', 'paytm', 'card', 'rupees', 'rs',
+  'money', 'payment', 'amount', 'due', 'recovery', 'collected', 'sent', 'transfer',
+  'recharge', 'subscription', 'repair', 'maintenance', 'gift', 'donation',
+];
+
+export function isExpenseRelated(input: string): boolean {
+  const lower = input.toLowerCase().trim();
+  if (!lower) return false;
+  const words = lower.split(/\s+/);
+  const matchCount = words.filter(w => EXPENSE_RELATED.some(k => w.includes(k) || k.includes(w))).length;
+  const hasAmount = /\d+/.test(lower);
+  return matchCount >= 1 || hasAmount;
+}
+
+export function getDayOfWeek(dateStr: string): string {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const d = new Date(dateStr + 'T00:00:00');
+  return days[d.getDay()];
+}
+
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   rent: ['rent', 'rikshaw rent', 'auto rent', 'room rent', 'house rent', 'shop rent', 'office rent', 'flat rent'],
   food: ['food', 'lunch', 'dinner', 'breakfast', 'tea', 'coffee', 'snack', 'chai', 'meal', 'restaurant', 'canteen', 'mess', 'burger', 'pizza', 'biryani', 'samosa'],
@@ -93,11 +118,11 @@ function resolveType(input: string): 'income' | 'expense' {
   return 'expense';
 }
 
-function resolvePaymentMode(input: string): string {
+function resolvePaymentMode(input: string): { mode: string; explicit: boolean } {
   const lower = input.toLowerCase();
-  if (ONLINE_KEYWORDS.some(k => lower.includes(k))) return 'online';
-  if (CASH_KEYWORDS.some(k => lower.includes(k))) return 'cash';
-  return 'cash';
+  if (ONLINE_KEYWORDS.some(k => lower.includes(k))) return { mode: 'online', explicit: true };
+  if (CASH_KEYWORDS.some(k => lower.includes(k))) return { mode: 'cash', explicit: true };
+  return { mode: '', explicit: false };
 }
 
 function resolveCategory(input: string): string {
@@ -148,12 +173,13 @@ export function parseEntry(input: string): ParsedEntry {
   const amount = resolveAmount(input);
   const type = resolveType(input);
   const category = resolveCategory(input);
-  const payment_mode = resolvePaymentMode(input);
+  const { mode: payment_mode, explicit: payment_mode_explicit } = resolvePaymentMode(input);
   const person = resolvePerson(input);
   const date = resolveDate(input);
+  const day = getDayOfWeek(date);
   const time = resolveTime(input);
   const location = resolveLocation(input);
   const notes = input.trim();
 
-  return { amount, type, category, payment_mode, person, date, time, location, notes };
+  return { amount, type, category, payment_mode, payment_mode_explicit, person, date, day, time, location, notes };
 }

@@ -1,7 +1,8 @@
-import { TrendingUp, Banknote, Wifi, Clock, ArrowUpRight, ArrowDownRight, Trash2, Download, Filter, LogOut, Crown } from 'lucide-react';
+import { TrendingUp, Banknote, Wifi, Clock, ArrowUpRight, ArrowDownRight, Trash2, Download, Filter, LogOut, Crown, Mic } from 'lucide-react';
 import { useTransactions } from '../lib/hooks';
 import { FilterType } from '../lib/types';
 import SmartEntry from '../components/SmartEntry';
+import VoiceAssistant from '../components/VoiceAssistant';
 import Toast from '../components/Toast';
 import { ParsedEntry } from '../lib/types';
 import { useState, useCallback } from 'react';
@@ -27,7 +28,7 @@ export default function Dashboard({ userId, onSignOut, onSubscribe, trialDaysLef
       amount: entry.amount,
       type: entry.type,
       category: entry.category,
-      payment_mode: entry.payment_mode,
+      payment_mode: entry.payment_mode || 'cash',
       person: entry.person,
       date: entry.date,
       time: entry.time,
@@ -145,11 +146,20 @@ export default function Dashboard({ userId, onSignOut, onSubscribe, trialDaysLef
           </div>
         </div>
 
+        {/* Voice Assistant */}
+        <div className="animate-slide-up">
+          <h2 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+            <Mic className="w-4 h-4 text-blue-500" />
+            Voice Assistant
+          </h2>
+          <VoiceAssistant onSubmit={handleAdd} />
+        </div>
+
         {/* Smart Entry */}
         <div className="animate-slide-up">
           <h2 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
             <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-            Smart Entry
+            Type Entry
           </h2>
           <SmartEntry onSubmit={handleAdd} />
         </div>

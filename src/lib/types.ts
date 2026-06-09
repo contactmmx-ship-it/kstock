@@ -27,8 +27,10 @@ export interface ParsedEntry {
   type: 'income' | 'expense';
   category: string;
   payment_mode: string;
+  payment_mode_explicit: boolean;
   person: string;
   date: string;
+  day: string;
   time: string;
   location: string;
   notes: string;
